@@ -6,7 +6,6 @@ import cv.igrp.framework.core.domain.CommandHandler;
 import cv.igrp.framework.stereotype.IgrpCommandHandler;
 import cv.igrp.platform.access_management.department.mapper.DepartmentMapper;
 import cv.igrp.platform.access_management.shared.application.constants.DepartmentStatus;
-import cv.igrp.platform.access_management.shared.application.constants.Status;
 import cv.igrp.platform.access_management.shared.domain.exceptions.IgrpResponseStatusException;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.DepartmentEntity;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.repository.ApplicationEntityRepository;
@@ -85,14 +84,24 @@ public class PostDepartmentCommandHandler implements CommandHandler<PostDepartme
 
       logger.info("Creating department: name={}, code={}", departmentDto.getName(), departmentDto.getCode());
 
+      // Validate another department with same code does not exist
+      departmentRepository.findByCodeAndStatusNot(departmentDto.getCode(), DepartmentStatus.DELETED)
+              .ifPresent(_ -> {
+                 logger.warn("Department code already exists: {}", departmentDto.getCode());
+                 throw IgrpResponseStatusException.of(
+                         HttpStatus.BAD_REQUEST,
+                         "Department code already exists",
+                         "Another department with code '" + departmentDto.getCode() + "' already exists.");
+              });
+
       DepartmentEntity department = departmentMapper.toEntity(departmentDto);
 
-      if(departmentDto.getParent_code() != null && !departmentDto.getParent_code().isBlank()) {
-         DepartmentEntity parent = departmentRepository.findByCodeAndStatusNot(command.getDepartmentdto().getParent_code(), DepartmentStatus.DELETED)
+      if(departmentDto.getParentCode() != null && !departmentDto.getParentCode().isBlank()) {
+         DepartmentEntity parent = departmentRepository.findByCodeAndStatusNot(command.getDepartmentdto().getParentCode(), DepartmentStatus.DELETED)
                  .orElseThrow(() -> {
-                    logger.warn("Invalid parent Code: {}", departmentDto.getParent_code());
+                    logger.warn("Invalid parent Code: {}", departmentDto.getParentCode());
                     return IgrpResponseStatusException.of(
-                            HttpStatus.BAD_REQUEST, "Invalid department Code", "No parent department found with Code: " + departmentDto.getParent_code());
+                            HttpStatus.BAD_REQUEST, "Invalid department Code", "No parent department found with Code: " + departmentDto.getParentCode());
                  });
          department.setParentId(parent);
       }

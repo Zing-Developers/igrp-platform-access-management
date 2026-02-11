@@ -25,11 +25,11 @@
       "before": false,
       "after": false,
       "positive": false,
-      "maxLength": 60,
+      "maxLength": 255,
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "regex": "^[A-Za-z0-9_-]+$"
+      "regex": "^[A-Za-z0-9._-]+$"
     },
     {
       "name": "description",
@@ -58,16 +58,17 @@
       "module": "shared"
     },
     {
-      "name": "departmentCode",
+      "name": "departments",
       "objectType": "java",
       "type": "string",
-      "required": true,
+      "required": false,
       "before": false,
       "after": false,
       "positive": false,
       "isEmail": false,
       "isUrl": false,
-      "primaryKey": false
+      "primaryKey": false,
+      "collectionType": "list"
     }
   ],
   "id": "ecx37yuxhk"

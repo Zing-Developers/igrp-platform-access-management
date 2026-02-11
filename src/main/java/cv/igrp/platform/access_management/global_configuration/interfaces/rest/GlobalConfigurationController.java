@@ -1,3 +1,6 @@
+/* THIS FILE WAS GENERATED AUTOMATICALLY BY iGRP STUDIO. */
+/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
+
 package cv.igrp.platform.access_management.global_configuration.interfaces.rest;
 
 import cv.igrp.framework.stereotype.IgrpController;
@@ -11,14 +14,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import cv.igrp.framework.core.domain.CommandBus;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import cv.igrp.framework.core.domain.QueryBus;
-import cv.igrp.platform.access_management.global_configuration.application.commands.*;
 import cv.igrp.platform.access_management.global_configuration.application.queries.*;
-
-
+import cv.igrp.framework.core.domain.CommandBus;
+import cv.igrp.platform.access_management.global_configuration.application.commands.*;
 import cv.igrp.platform.access_management.global_configuration.application.dto.GlobalConfigurationDTO;
 
 @IgrpController
@@ -27,26 +28,21 @@ import cv.igrp.platform.access_management.global_configuration.application.dto.G
 @Tag(name = "GlobalConfiguration", description = "Global Configuration")
 public class GlobalConfigurationController {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(GlobalConfigurationController.class);
-
   
-  private final CommandBus commandBus;
   private final QueryBus queryBus;
+  private final CommandBus commandBus;
 
-  
-  public GlobalConfigurationController(
-    CommandBus commandBus, QueryBus queryBus
-  ) {
-    this.commandBus = commandBus;
-    this.queryBus = queryBus;
+  public GlobalConfigurationController(QueryBus queryBus, CommandBus commandBus) {
+          this.queryBus = queryBus;
+          this.commandBus = commandBus;
   }
-
-  @PostMapping(
-    value = "globalConfiguration"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_CUSTOMIZE)")
+   @PostMapping(
+   value = "global-configuration"
   )
   @Operation(
-    summary = "POST method to handle operations for setGlobalConfiguration",
-    description = "POST method to handle operations for setGlobalConfiguration",
+    summary = "Set global configuration",
+    description = "This Permission is required: igrp.application.customize",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -65,25 +61,19 @@ public class GlobalConfigurationController {
     )
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new SetGlobalConfigurationCommand(setGlobalConfigurationRequest);
 
        ResponseEntity<GlobalConfigurationDTO> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @GetMapping(
-    value = "globalConfiguration"
+   @GetMapping(
+   value = "global-configuration"
   )
   @Operation(
-    summary = "GET method to handle operations for getGlobalConfiguration",
-    description = "GET method to handle operations for getGlobalConfiguration",
+    summary = "Get global configuration",
+    description = "Get global configuration",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -102,17 +92,11 @@ public class GlobalConfigurationController {
     @RequestParam(value = "type") String type)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetGlobalConfigurationQuery(type);
 
       ResponseEntity<GlobalConfigurationDTO> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
 }

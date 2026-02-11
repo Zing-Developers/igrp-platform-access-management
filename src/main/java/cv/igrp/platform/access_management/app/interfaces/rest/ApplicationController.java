@@ -14,19 +14,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
-import cv.igrp.framework.core.domain.CommandBus;
-import cv.igrp.framework.core.domain.QueryBus;
-import cv.igrp.platform.access_management.app.application.commands.*;
-import cv.igrp.platform.access_management.app.application.queries.*;
 
+import cv.igrp.framework.core.domain.QueryBus;
+import cv.igrp.platform.access_management.app.application.queries.*;
+import cv.igrp.framework.core.domain.CommandBus;
+import cv.igrp.platform.access_management.app.application.commands.*;
 import cv.igrp.platform.access_management.shared.application.dto.ApplicationDTO;
 import java.util.List;
 import java.util.Map;
 import cv.igrp.platform.access_management.shared.application.dto.MenuEntryDTO;
-import cv.igrp.platform.access_management.shared.application.dto.CodeListRequestDTO;
 
 @IgrpController
 @RestController
@@ -34,26 +31,21 @@ import cv.igrp.platform.access_management.shared.application.dto.CodeListRequest
 @Tag(name = "Application", description = "Application Management")
 public class ApplicationController {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationController.class);
-
   
-  private final CommandBus commandBus;
   private final QueryBus queryBus;
+  private final CommandBus commandBus;
 
-  
-  public ApplicationController(
-    CommandBus commandBus, QueryBus queryBus
-  ) {
-    this.commandBus = commandBus;
-    this.queryBus = queryBus;
+  public ApplicationController(QueryBus queryBus, CommandBus commandBus) {
+          this.queryBus = queryBus;
+          this.commandBus = commandBus;
   }
-
-  @PostMapping(
-    value = "applications"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_CREATE)")
+   @PostMapping(
+   value = "applications"
   )
   @Operation(
-    summary = "POST method to handle operations for createApplication",
-    description = "POST method to handle operations for createApplication",
+    summary = "Create application",
+    description = "This Permission is required: igrp.application.create",
     responses = {
       @ApiResponse(
           responseCode = "201",
@@ -72,25 +64,20 @@ public class ApplicationController {
     )
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new CreateApplicationCommand(createApplicationRequest);
 
        ResponseEntity<ApplicationDTO> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @GetMapping(
-    value = "applications"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_LIST)")
+   @GetMapping(
+   value = "applications"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplications",
-    description = "GET method to handle operations for getApplications",
+    summary = "Get applications",
+    description = "This Permission is required: igrp.application.list",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -113,25 +100,20 @@ public class ApplicationController {
     @RequestParam(value = "type", required = false) String type)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationsQuery(code, name, slug, departmentCode, type);
 
       ResponseEntity<List<ApplicationDTO>> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @GetMapping(
-    value = "applications/{id}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_VIEW)")
+   @GetMapping(
+   value = "applications/{id}"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplicationById",
-    description = "GET method to handle operations for getApplicationById",
+    summary = "Get application by id",
+    description = "This Permission is required: igrp.application.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -150,25 +132,20 @@ public class ApplicationController {
     @PathVariable(value = "id") Integer id)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationByIdQuery(id);
 
       ResponseEntity<ApplicationDTO> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @PutMapping(
-    value = "applications/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_UPDATE)")
+   @PutMapping(
+   value = "applications/{code}"
   )
   @Operation(
-    summary = "PUT method to handle operations for updateApplication",
-    description = "PUT method to handle operations for updateApplication",
+    summary = "Update application",
+    description = "This Permission is required: igrp.application.update",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -187,25 +164,20 @@ public class ApplicationController {
     , @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new UpdateApplicationCommand(updateApplicationRequest, code);
 
        ResponseEntity<ApplicationDTO> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @DeleteMapping(
-    value = "applications/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_DELETE)")
+   @DeleteMapping(
+   value = "applications/{code}"
   )
   @Operation(
-    summary = "DELETE method to handle operations for deleteApplication",
-    description = "DELETE method to handle operations for deleteApplication",
+    summary = "Delete application",
+    description = "This Permission is required: igrp.application.delete",
     responses = {
       @ApiResponse(
           responseCode = "204",
@@ -224,62 +196,19 @@ public class ApplicationController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new DeleteApplicationCommand(code);
 
        ResponseEntity<String> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @PostMapping(
-    value = "applications/by-ids"
+   @GetMapping(
+   value = "applications/by-user/{uid}"
   )
   @Operation(
-    summary = "POST method to handle operations for getApplicationsByIds",
-    description = "POST method to handle operations for getApplicationsByIds",
-    responses = {
-      @ApiResponse(
-          responseCode = "200",
-          description = "The List of Application",
-          content = @Content(
-              mediaType = "application/json",
-              schema = @Schema(
-                  implementation = ApplicationDTO.class,
-                  type = "object")
-          )
-      )
-    }
-  )
-  
-  public ResponseEntity<List<ApplicationDTO>> getApplicationsByIds(@RequestBody List<Integer> getApplicationsByIdsRequest
-    )
-  {
-
-      LOGGER.debug("Operation started");
-
-      final var command = new GetApplicationsByIdsCommand(getApplicationsByIdsRequest);
-
-       ResponseEntity<List<ApplicationDTO>> response = commandBus.send(command);
-
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
-  }
-
-  @GetMapping(
-    value = "applications/by-user/{uid}"
-  )
-  @Operation(
-    summary = "GET method to handle operations for getApplicationsByUser",
-    description = "GET method to handle operations for getApplicationsByUser",
+    summary = "Get applications by user",
+    description = "Get applications by user",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -298,62 +227,20 @@ public class ApplicationController {
     @PathVariable(value = "uid") String uid)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationsByUserQuery(uid);
 
       ResponseEntity<List<ApplicationDTO>> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @GetMapping(
-    value = "/applications/denied-to-user/{uid}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_UPDATE)")
+   @PostMapping(
+   value = "/applications/{code}/custom-fields"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplicationDeniedToUser",
-    description = "GET method to handle operations for getApplicationDeniedToUser",
-    responses = {
-      @ApiResponse(
-          responseCode = "200",
-          description = "List of Applications denied to User",
-          content = @Content(
-              mediaType = "application/json",
-              schema = @Schema(
-                  implementation = ApplicationDTO.class,
-                  type = "")
-          )
-      )
-    }
-  )
-  
-  public ResponseEntity<List<ApplicationDTO>> getApplicationDeniedToUser(
-    @PathVariable(value = "uid") String uid)
-  {
-
-      LOGGER.debug("Operation started");
-
-      final var query = new GetApplicationDeniedToUserQuery(uid);
-
-      ResponseEntity<List<ApplicationDTO>> response = queryBus.handle(query);
-
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
-  }
-
-  @PostMapping(
-    value = "/applications/{code}/custom-fields"
-  )
-  @Operation(
-    summary = "POST method to handle operations for addApplicationCustomFields",
-    description = "POST method to handle operations for addApplicationCustomFields",
+    summary = "Add application custom fields",
+    description = "This Permission is required: igrp.application.update",
     responses = {
       @ApiResponse(
           responseCode = "204",
@@ -372,25 +259,20 @@ public class ApplicationController {
     , @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new AddApplicationCustomFieldsCommand(addApplicationCustomFieldsRequest, code);
 
        ResponseEntity<String> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @PostMapping(
-    value = "/applications/{code}/custom-fields/remove"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_UPDATE)")
+   @DeleteMapping(
+   value = "/applications/{code}/custom-fields"
   )
   @Operation(
-    summary = "POST method to handle operations for removeApplicationCustomFields",
-    description = "POST method to handle operations for removeApplicationCustomFields",
+    summary = "Remove application custom fields",
+    description = "This Permission is required: igrp.application.update",
     responses = {
       @ApiResponse(
           responseCode = "204",
@@ -409,25 +291,20 @@ public class ApplicationController {
     , @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new RemoveApplicationCustomFieldsCommand(removeApplicationCustomFieldsRequest, code);
 
        ResponseEntity<String> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @GetMapping(
-    value = "/applications/{code}/custom-fields"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_VIEW)")
+   @GetMapping(
+   value = "/applications/{code}/custom-fields"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplicationCustomFields",
-    description = "GET method to handle operations for getApplicationCustomFields",
+    summary = "Get application custom fields",
+    description = "This Permission is required: igrp.application.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -446,25 +323,20 @@ public class ApplicationController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationCustomFieldsQuery(code);
 
       ResponseEntity<Map<String, ?>> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @GetMapping(
-    value = "/applications/by-code/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_VIEW)")
+   @GetMapping(
+   value = "/applications/by-code/{code}"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplicationByCode",
-    description = "GET method to handle operations for getApplicationByCode",
+    summary = "Get application by code",
+    description = "This Permission is required: igrp.application.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -483,25 +355,116 @@ public class ApplicationController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationByCodeQuery(code);
 
       ResponseEntity<ApplicationDTO> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @GetMapping(
-    value = "/applications/{code}/menus/available"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @PostMapping(
+   value = "/applications/{applicationCode}/menus"
   )
   @Operation(
-    summary = "GET method to handle operations for getApplicationMenus",
-    description = "GET method to handle operations for getApplicationMenus",
+    summary = "Create menu",
+    description = "This Permission is required: igrp.application.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "201",
+          description = "The Persisted Menu",
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = MenuEntryDTO.class,
+                  type = "")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<MenuEntryDTO> createMenu(@Valid @RequestBody MenuEntryDTO createMenuRequest
+    , @PathVariable(value = "applicationCode") String applicationCode)
+  {
+
+      final var command = new CreateMenuCommand(createMenuRequest, applicationCode);
+
+       ResponseEntity<MenuEntryDTO> response = commandBus.send(command);
+
+       return response;
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @PutMapping(
+   value = "/applications/{applicationCode}/menus/{menuCode}"
+  )
+  @Operation(
+    summary = "Update menu",
+    description = "This Permission is required: igrp.application.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          description = "The Updated Menu",
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = MenuEntryDTO.class,
+                  type = "")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<MenuEntryDTO> updateMenu(@Valid @RequestBody MenuEntryDTO updateMenuRequest
+    , @PathVariable(value = "applicationCode") String applicationCode,@PathVariable(value = "menuCode") String menuCode)
+  {
+
+      final var command = new UpdateMenuCommand(updateMenuRequest, applicationCode, menuCode);
+
+       ResponseEntity<MenuEntryDTO> response = commandBus.send(command);
+
+       return response;
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_DELETE)")
+   @DeleteMapping(
+   value = "/applications/{applicationCode}/menus/{menuCode}"
+  )
+  @Operation(
+    summary = "Delete menu",
+    description = "This Permission is required: igrp.application.delete",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          description = "No Content",
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> deleteMenu(
+    @PathVariable(value = "applicationCode") String applicationCode,@PathVariable(value = "menuCode") String menuCode)
+  {
+
+      final var command = new DeleteMenuCommand(applicationCode, menuCode);
+
+       ResponseEntity<String> response = commandBus.send(command);
+
+       return response;
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_VIEW)")
+   @GetMapping(
+   value = "/applications/{code}/menus"
+  )
+  @Operation(
+    summary = "Get application menus",
+    description = "This Permission is required: igrp.application.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -520,140 +483,88 @@ public class ApplicationController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetApplicationMenusQuery(code);
 
       ResponseEntity<List<MenuEntryDTO>> response = queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+      return response;
   }
 
-  @PostMapping(
-    value = "/applications/{code}/roles"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @PostMapping(
+   value = "/applications/{applicationCode}/menus/{menuCode}/roles"
   )
   @Operation(
-    summary = "POST method to handle operations for addRolesToApp",
-    description = "POST method to handle operations for addRolesToApp",
+    summary = "Add roles to menu",
+    description = "This Permission is required: igrp.application.manage",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "Add roles to an application",
+          description = "",
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
-                  implementation = String.class,
-                  type = "String")
+                  implementation = MenuEntryDTO.class,
+                  type = "object")
           )
       )
     }
   )
   
-  public ResponseEntity<String> addRolesToApp(@Valid @RequestBody CodeListRequestDTO addRolesToAppRequest
-    , @PathVariable(value = "code") String code)
+  public ResponseEntity<MenuEntryDTO> addRolesToMenu(@RequestBody List<String> addRolesToMenuRequest
+    , @RequestParam(value = "departmentCode") String departmentCode, @PathVariable(value = "applicationCode") String applicationCode,@PathVariable(value = "menuCode") String menuCode)
   {
 
-      LOGGER.debug("Operation started");
+      final var command = new AddRolesToMenuCommand(addRolesToMenuRequest, departmentCode, applicationCode, menuCode);
 
-      final var command = new AddRolesToAppCommand(addRolesToAppRequest, code);
+       ResponseEntity<MenuEntryDTO> response = commandBus.send(command);
 
-       ResponseEntity<String> response = commandBus.send(command);
-
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @DeleteMapping(
-    value = "applications/{code}/roles"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @DeleteMapping(
+   value = "/applications/{applicationCode}/menus/{menuCode}/roles"
   )
   @Operation(
-    summary = "DELETE method to handle operations for removeRoleFromApplication",
-    description = "DELETE method to handle operations for removeRoleFromApplication",
-    responses = {
-      @ApiResponse(
-          responseCode = "204",
-          description = "Remove a role from an application",
-          content = @Content(
-              mediaType = "application/json",
-              schema = @Schema(
-                  implementation = String.class,
-                  type = "String")
-          )
-      )
-    }
-  )
-  
-  public ResponseEntity<String> removeRoleFromApplication(@Valid @RequestBody CodeListRequestDTO removeRoleFromApplicationRequest
-    , @PathVariable(value = "code") String code)
-  {
-
-      LOGGER.debug("Operation started");
-
-      final var command = new RemoveRoleFromApplicationCommand(removeRoleFromApplicationRequest, code);
-
-       ResponseEntity<String> response = commandBus.send(command);
-
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
-  }
-
-  @PostMapping(
-    value = "applications/{code}/departments"
-  )
-  @Operation(
-    summary = "POST method to handle operations for addDepartmentsToApplication",
-    description = "POST method to handle operations for addDepartmentsToApplication",
+    summary = "Remove roles from menu",
+    description = "This Permission is required: igrp.application.manage",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "Add departments to an application",
+          description = "",
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
-                  implementation = String.class,
-                  type = "String")
+                  implementation = MenuEntryDTO.class,
+                  type = "object")
           )
       )
     }
   )
   
-  public ResponseEntity<String> addDepartmentsToApplication(@Valid @RequestBody CodeListRequestDTO addDepartmentsToApplicationRequest
-    , @PathVariable(value = "code") String code)
+  public ResponseEntity<MenuEntryDTO> removeRolesFromMenu(@RequestBody List<String> removeRolesFromMenuRequest
+    , @RequestParam(value = "departmentCode") String departmentCode, @PathVariable(value = "applicationCode") String applicationCode,@PathVariable(value = "menuCode") String menuCode)
   {
 
-      LOGGER.debug("Operation started");
+      final var command = new RemoveRolesFromMenuCommand(removeRolesFromMenuRequest, departmentCode, applicationCode, menuCode);
 
-      final var command = new AddDepartmentsToApplicationCommand(addDepartmentsToApplicationRequest, code);
+       ResponseEntity<MenuEntryDTO> response = commandBus.send(command);
 
-       ResponseEntity<String> response = commandBus.send(command);
-
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+       return response;
   }
 
-  @DeleteMapping(
-    value = "applications/{code}/departments"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @PostMapping(
+   value = "applications/{code}/resources"
   )
   @Operation(
-    summary = "DELETE method to handle operations for removeDepartmentFromApplication",
-    description = "DELETE method to handle operations for removeDepartmentFromApplication",
+    summary = "Link resource to application",
+    description = "This Permission is required: igrp.application.manage",
     responses = {
       @ApiResponse(
           responseCode = "204",
-          description = "Remove a department from an application",
+          description = "",
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -664,21 +575,47 @@ public class ApplicationController {
     }
   )
   
-  public ResponseEntity<String> removeDepartmentFromApplication(@Valid @RequestBody CodeListRequestDTO removeDepartmentFromApplicationRequest
+  public ResponseEntity<String> linkResourceToApplication(@RequestBody List<String> linkResourceToApplicationRequest
     , @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
-      final var command = new RemoveDepartmentFromApplicationCommand(removeDepartmentFromApplicationRequest, code);
+      final var command = new LinkResourceToApplicationCommand(linkResourceToApplicationRequest, code);
 
        ResponseEntity<String> response = commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
+       return response;
+  }
 
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_APPLICATION_MANAGE)")
+   @DeleteMapping(
+   value = "applications/{code}/resources"
+  )
+  @Operation(
+    summary = "Unlink resource from application",
+    description = "This Permission is required: igrp.application.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          description = "",
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> unlinkResourceFromApplication(@RequestBody List<String> unlinkResourceFromApplicationRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new UnlinkResourceFromApplicationCommand(unlinkResourceFromApplicationRequest, code);
+
+       ResponseEntity<String> response = commandBus.send(command);
+
+       return response;
   }
 
 }

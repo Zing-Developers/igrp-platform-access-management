@@ -25,8 +25,7 @@
       "before": false,
       "after": false,
       "positive": false,
-      "minLength": 3,
-      "maxLength": 100,
+      "maxLength": 255,
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false
@@ -54,20 +53,7 @@
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "minLength": 5,
       "maxLength": 255
-    },
-    {
-      "name": "permissionName",
-      "objectType": "java",
-      "type": "string",
-      "required": false,
-      "before": false,
-      "after": false,
-      "positive": false,
-      "isEmail": false,
-      "isUrl": false,
-      "primaryKey": false
     },
     {
       "name": "resourceName",
@@ -80,6 +66,19 @@
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false
+    },
+    {
+      "name": "permissions",
+      "objectType": "java",
+      "type": "string",
+      "required": false,
+      "before": false,
+      "after": false,
+      "positive": false,
+      "isEmail": false,
+      "isUrl": false,
+      "primaryKey": false,
+      "collectionType": "list"
     },
     {
       "name": "createdBy",

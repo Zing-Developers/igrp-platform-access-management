@@ -1,5 +1,5 @@
 /* THIS FILE WAS GENERATED AUTOMATICALLY BY iGRP STUDIO. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
+/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME */
 
 package cv.igrp.platform.access_management.shared.infrastructure.persistence.entity;
 
@@ -10,6 +10,8 @@ import lombok.*;
 import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
+import java.util.ArrayList;
 
 @Audited
 @Getter
@@ -28,12 +30,11 @@ public class ResourceItemEntity extends AuditEntity {
 
   
     @NotBlank(message = "name is mandatory")
-    @Column(name="name", nullable = false, length=100)
+    @Column(name="name", nullable = false)
     private String name;
 
   
-    @NotBlank(message = "description is mandatory")
-    @Column(name="description", nullable = false)
+    @Column(name="description")
     private String description;
 
   
@@ -47,8 +48,8 @@ public class ResourceItemEntity extends AuditEntity {
   @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resource_id", referencedColumnName = "id")
     private ResourceEntity resourceId;
-    @Column(name="permission_id")
-    private Integer permissionId;
 
-  
+
+  @OneToMany(mappedBy = "", fetch = FetchType.LAZY)
+private List<PermissionEntity> permissions = new ArrayList<>();
 }

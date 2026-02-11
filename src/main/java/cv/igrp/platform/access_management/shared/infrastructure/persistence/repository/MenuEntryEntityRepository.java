@@ -3,6 +3,7 @@ package cv.igrp.platform.access_management.shared.infrastructure.persistence.rep
 import cv.igrp.platform.access_management.shared.application.constants.MenuEntryType;
 import cv.igrp.platform.access_management.shared.application.constants.Status;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.ApplicationEntity;
+import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.DepartmentEntity;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.MenuEntryEntity;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,45 +18,188 @@ import org.springframework.data.repository.history.RevisionRepository;
 
 @Repository
 public interface MenuEntryEntityRepository extends
-    JpaRepository<MenuEntryEntity, Integer>,
-    JpaSpecificationExecutor<MenuEntryEntity>,
-    RevisionRepository<MenuEntryEntity, Integer, Integer>
-{
+        JpaRepository<MenuEntryEntity, Integer>,
+        JpaSpecificationExecutor<MenuEntryEntity>,
+        RevisionRepository<MenuEntryEntity, Integer, Integer> {
 
-    List<MenuEntryEntity> findByApplicationIdAndStatus(ApplicationEntity appId, Status status);
+    List<MenuEntryEntity> findByApplicationIdAndStatusIn(ApplicationEntity appId, List<Status> status);
 
-    Optional<MenuEntryEntity> findByCodeAndStatusNot(String code, Status status);
+    List<MenuEntryEntity> findByParentId(MenuEntryEntity parent);
+
+    @Query(value = """
+    SELECT m.*
+    FROM t_menu_entry m
+    WHERE m.application_id = :application
+      AND m.status IN(:statuses)
+      AND (:menuName IS NULL OR m.name ILIKE CONCAT('%', :menuName, '%'))
+""", nativeQuery = true)
+    List<MenuEntryEntity> findByApplicationAndStatusAndMenuName(
+            @Param("application") Integer application,
+            @Param("statuses") List<String> statuses,
+            @Param("menuName") String menuName
+    );
+
+    List<MenuEntryEntity> findByApplicationIdAndTypeInAndStatusIn(ApplicationEntity appId, List<MenuEntryType> types, List<Status> status);
+
+    Optional<MenuEntryEntity> findByApplicationIdAndCodeAndStatusNot(ApplicationEntity appId, String code, Status status);
 
     @Query("""
-    SELECT DISTINCT m
-    FROM MenuEntryEntity m
-    JOIN m.applicationId a
-    JOIN a.departments dParent
-    WHERE (
-        dParent.code = :code
-        OR EXISTS (
-            SELECT 1
-            FROM DepartmentEntity child
-            JOIN child.parentId p
-            JOIN child.menuentries cm
-            WHERE p.code = :code AND cm.id = m.id
-        )
-        OR EXISTS (
-            SELECT 1
-            FROM DepartmentEntity child
-            JOIN child.parentId p
-            JOIN p.menuentries pm
-            WHERE child.code = :code AND pm.id = m.id
-        )
-    )
-    AND NOT EXISTS (
-        SELECT 1
-        FROM DepartmentEntity d2
-        JOIN d2.menuentries dm
-        WHERE d2.code = :code AND dm.id = m.id
-    )
-""")
-    List<MenuEntryEntity> findAvailableMenusForDepartment(@Param("code") String code);
+                SELECT DISTINCT m
+                FROM MenuEntryEntity m
+                JOIN m.applicationId a
+                JOIN a.departments dParent
+                WHERE ((
+                    dParent.code = :code
+                    OR EXISTS (
+                        SELECT 1
+                        FROM DepartmentEntity child
+                        JOIN child.parentId p
+                        JOIN child.menuentries cm
+                        WHERE p.code = :code AND cm.id = m.id
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM DepartmentEntity child
+                        JOIN child.parentId p
+                        JOIN p.menuentries pm
+                        WHERE child.code = :code AND pm.id = m.id
+                    )
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM DepartmentEntity d2
+                    JOIN d2.menuentries dm
+                    WHERE d2.code = :code AND dm.id = m.id
+                )) AND m.status = 'ACTIVE' AND (m.type = 'MENU_PAGE' OR m.type = 'EXTERNAL_PAGE' OR m.type = 'SYSTEM_PAGE') AND a = :application
+            """)
+    List<MenuEntryEntity> findAvailableMenusForDepartment(@Param("code") String code, @Param("application") ApplicationEntity application);
 
+    @Query("""
+        SELECT m
+        FROM MenuEntryEntity m
+        JOIN m.departments d
+        WHERE d = :department AND m.status <> :status
+    """)
+    List<MenuEntryEntity> findByDepartmentAndStatusNot(DepartmentEntity department, Status status);
+
+    @Query(value = """
+    SELECT m.*
+    FROM t_menu_entry m
+    JOIN t_department_menuentry dm ON dm.menuentry_id = m.id
+    WHERE dm.department_id = :department
+      AND m.status <> :status
+      AND (:code IS NULL OR m.code ILIKE CONCAT('%', :code, '%'))
+""", nativeQuery = true)
+    List<MenuEntryEntity> findByDepartmentAndStatusNotFiltered(Integer department, String status, @Param("code") String menuCode);
+
+    /**
+     * Finds all menu entries that are not deleted for a given user.
+     *
+     * @param userId the user ID's
+     * @return a list of menu entry entities
+     */
+    @Query(value = """
+    WITH RECURSIVE menu_tree AS (
+        SELECT m.*
+        FROM t_menu_entry m
+        JOIN t_menu_entry_roles rm ON rm.menu_entry_entity_id = m.id
+        JOIN t_role r ON r.id = rm.roles_id
+        JOIN t_role_users ur ON ur.roles_id = r.id
+        JOIN t_user u ON u.id = ur.users_id
+        WHERE u.id = :userId
+          AND m.application_id = :applicationId
+          AND m.status <> 'DELETED'
+
+        UNION
+    
+        SELECT parent.*
+        FROM t_menu_entry parent
+        JOIN menu_tree child ON child.parent_id = parent.id
+        WHERE parent.status <> 'DELETED'
+    )
+    SELECT DISTINCT *
+    FROM menu_tree
+    ORDER BY position
+    """, nativeQuery = true)
+    List<MenuEntryEntity> findByApplicationIdAndUserIdAndStatusNotDeleted(@Param("userId") Integer userId,
+                                                                          @Param("applicationId") Integer applicationId);
+
+    /**
+     * Finds all menu entries that are not deleted for a given user.
+     *
+     * @param userId the user ID's
+     * @return a list of menu entry entities
+     */
+    @Query(value = """
+    WITH RECURSIVE menu_tree AS (
+        SELECT m.*
+        FROM t_menu_entry m
+        JOIN t_menu_entry_roles rm ON rm.menu_entry_entity_id = m.id
+        JOIN t_role r ON r.id = rm.roles_id
+        JOIN t_role_users ur ON ur.roles_id = r.id
+        JOIN t_user u ON u.id = ur.users_id
+        WHERE u.id = :userId
+          AND m.application_id = :applicationId
+          AND m.status = 'ACTIVE'
+          AND (
+            :menuCode IS NULL
+            OR m.name ILIKE CONCAT('%', :menuCode, '%')
+          )
+
+        UNION
+    
+        SELECT parent.*
+        FROM t_menu_entry parent
+        JOIN menu_tree child ON child.parent_id = parent.id
+        WHERE parent.status = 'ACTIVE'
+    )
+    SELECT DISTINCT *
+    FROM menu_tree
+    ORDER BY position
+    """, nativeQuery = true)
+    List<MenuEntryEntity> findActiveByApplicationIdAndUserIdFiltered(@Param("userId") Integer userId,
+                                                                     @Param("applicationId") Integer applicationId,
+                                                                     @Param("menuCode") String menuCode
+    );
+
+
+    /**
+     * Finds all menu entries that are not deleted for the current user.
+     *
+     * @param userId the current user ID's
+     * @return a list of menu entry entities
+     */
+    @Query(value = """
+    WITH RECURSIVE menu_tree AS (
+        SELECT m.*
+        FROM t_menu_entry m
+        JOIN t_menu_entry_roles rm ON rm.menu_entry_entity_id = m.id
+        JOIN t_role r ON r.id = rm.roles_id
+        JOIN t_role_users ur ON ur.roles_id = r.id
+        JOIN t_user u ON u.id = ur.users_id
+        WHERE u.id = :userId
+          AND r.id = u.active_role_id
+          AND m.application_id = :applicationId
+          AND m.status = 'ACTIVE'
+          AND (
+            :menuCode IS NULL
+            OR m.name ILIKE CONCAT('%', :menuCode, '%')
+          )
+
+        UNION
+    
+        SELECT parent.*
+        FROM t_menu_entry parent
+        JOIN menu_tree child ON child.parent_id = parent.id
+        WHERE parent.status = 'ACTIVE'
+    )
+    SELECT DISTINCT *
+    FROM menu_tree
+    ORDER BY position
+    """, nativeQuery = true)
+    List<MenuEntryEntity> findActiveByApplicationIdAndCurrentUserIdFiltered(@Param("userId") Integer userId,
+                                                                     @Param("applicationId") Integer applicationId,
+                                                                     @Param("menuCode") String menuCode
+    );
 
 }

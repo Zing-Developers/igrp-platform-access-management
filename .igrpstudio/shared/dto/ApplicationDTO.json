@@ -41,8 +41,7 @@
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "minLength": 5,
-      "maxLength": 50
+      "maxLength": 255
     },
     {
       "name": "description",
@@ -55,7 +54,6 @@
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "minLength": 5,
       "maxLength": 255
     },
     {
@@ -133,8 +131,7 @@
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "maxLength": 50,
-      "minLength": 3
+      "maxLength": 255
     },
     {
       "name": "createdBy",
@@ -185,18 +182,29 @@
       "primaryKey": false
     },
     {
+      "name": "lastAccess",
+      "objectType": "java",
+      "type": "datetime",
+      "required": false,
+      "before": false,
+      "after": false,
+      "positive": false,
+      "isEmail": false,
+      "isUrl": false,
+      "primaryKey": false
+    },
+    {
       "name": "departments",
       "objectType": "java",
       "type": "string",
-      "required": true,
+      "required": false,
       "before": false,
       "after": false,
       "positive": false,
       "isEmail": false,
       "isUrl": false,
       "primaryKey": false,
-      "collectionType": "list",
-      "minLength": 1
+      "collectionType": "list"
     }
   ],
   "id": "2fh2z2x9s8"

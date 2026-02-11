@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
+import static cv.igrp.platform.access_management.shared.infrastructure.service.ConfigurationService.SUPER_ADMIN_ROLE;
 
 @Service
 public class PermissionCacheService {
@@ -39,7 +42,7 @@ public class PermissionCacheService {
             keyGenerator = "permissionCacheKeyGenerator")
     public PermissionCacheEntryDTO getOrLoadPermission(PermissionCheckRequest request) {
 
-        LOGGER.info("Cache MISS - Buscando no banco de dados: {}:{}:{}",
+        LOGGER.info("Cache MISS - Checking in database: {}:{}:{}",
                 request.getSubject(),
                 request.getResource(),
                 request.getAction());
@@ -51,10 +54,9 @@ public class PermissionCacheService {
         setFromCacheAsFalse();
 
         String subject = request.getSubject();
-        String resource = request.getResource();
         String action = request.getAction();
 
-        boolean allowed = checkPermission(subject, resource, action);
+        boolean allowed = checkPermission(subject, action);
 
         PermissionCacheEntryDTO response = new PermissionCacheEntryDTO(
                                                 allowed,
@@ -64,47 +66,39 @@ public class PermissionCacheService {
         return response;
     }
 
-    private Boolean checkPermission(String username, String resourceItem, String permissionName) {
+    private Boolean checkPermission(String subject, String permissionName) {
 
-        // Verifica se o utilizador existe ou está inativo/deletado
-        var userOpt = userRepository.findByUsername(username);
+        // Verifies if the user exists or if it is deleted or disabled
+        var userOpt = userRepository.findByExternalId(subject);
         if (userOpt.isEmpty() || userOpt.get().getStatus() == Status.DELETED || userOpt.get().getStatus() == Status.INACTIVE) {
+            LOGGER.info("User {} is not active or deleted", subject);
             return false;
         }
 
-        String sql = """
-                WITH target_user AS (
-                            SELECT id
-                            FROM t_user
-                            WHERE username = ?
-                        ),
-                        user_roles AS (
-                            SELECT ru.roles_id
-                            FROM t_role_users ru
-                            JOIN target_user tu ON ru.users_id = tu.id
-                        ),
-                        role_permissions AS (
-                            SELECT rp.permission
-                            FROM t_role_permission rp
-                            JOIN user_roles ur ON rp.role_id = ur.roles_id
-                        ),
-                        target_permission AS (
-                            SELECT p.id
-                            FROM t_permission p
-                            JOIN role_permissions rp ON p.id = rp.permission
-                            WHERE p.name = ?
-                        ),
-                        resource_check AS (
-                            SELECT 1 AS result
-                            FROM t_resource_item ri
-                            JOIN target_permission tp ON ri.permission_id = tp.id
-                            WHERE ri.name = ?
-                        )
-                        SELECT result FROM resource_check
-                        LIMIT 1;
-               """;
+        // If the user is superadmin it is allowed to do anything
+        if(userOpt.get().getRoles().stream().anyMatch(r -> Objects.equals(r.getCode(), SUPER_ADMIN_ROLE))) {
+            LOGGER.info("User {} is superadmin", subject);
+            return true;
+        }
 
-        List<Integer> results = jdbcTemplate.query(sql, (_,_) -> 1, username, permissionName, resourceItem);
+        LOGGER.info("Checking permission {} for user {}", permissionName, subject);
+
+        String sql = """
+                 SELECT 1 AS result
+                        FROM t_user u
+                        JOIN t_role_users ru ON ru.users_id = u.id
+                        JOIN t_role_permission rp ON rp.role_id = ru.roles_id
+                        JOIN t_role r ON r.id = ru.roles_id
+                        JOIN t_permission p ON p.id = rp.permission
+                        WHERE u.external_id = ?
+                          AND p.name = ?
+                          AND p.status = 'ACTIVE'
+                          AND r.status = 'ACTIVE'
+                          AND r.id = u.active_role_id
+                        LIMIT 1;
+                """;
+
+        List<Integer> results = jdbcTemplate.query(sql, (_,_) -> 1, subject, permissionName);
 
         return !results.isEmpty();
     }

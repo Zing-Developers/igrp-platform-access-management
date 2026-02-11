@@ -1,8 +1,10 @@
 package cv.igrp.platform.access_management.department.application.queries;
 
-import cv.igrp.platform.access_management.resource.mapper.ResourceMapper;
+import cv.igrp.platform.access_management.department.mapper.ResourceMapper;
 import cv.igrp.platform.access_management.shared.application.dto.ResourceDTO;
+import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.DepartmentEntity;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.entity.ResourceEntity;
+import cv.igrp.platform.access_management.shared.infrastructure.persistence.repository.DepartmentEntityRepository;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.repository.ResourceEntityRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.Collections;
 import java.util.List;
 
+import static cv.igrp.platform.access_management.shared.infrastructure.service.ConfigurationService.IGRP_RESOURCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -28,6 +31,9 @@ class GetAvailableResourcesForDepartmentQueryHandlerTest {
 
   @Mock
   private ResourceEntityRepository resourceEntityRepository;
+
+  @Mock
+  private DepartmentEntityRepository departmentEntityRepository;
 
   @Mock
   private ResourceMapper resourceMapper;
@@ -69,7 +75,8 @@ class GetAvailableResourcesForDepartmentQueryHandlerTest {
     List<ResourceEntity> mockEntities = List.of(resourceEntity1, resourceEntity2);
 
     // Mock repository and mapper behavior
-    when(resourceEntityRepository.findAvailableResourcesForDepartment(departmentCode)).thenReturn(mockEntities);
+    when(departmentEntityRepository.findByCodeAndStatusNotDeleted(departmentCode)).thenReturn(new DepartmentEntity());
+    when(resourceEntityRepository.findAvailableResourcesForDepartment(departmentCode, IGRP_RESOURCE)).thenReturn(mockEntities);
     when(resourceMapper.toDto(resourceEntity1)).thenReturn(resourceDTO1);
     when(resourceMapper.toDto(resourceEntity2)).thenReturn(resourceDTO2);
 
@@ -91,7 +98,8 @@ class GetAvailableResourcesForDepartmentQueryHandlerTest {
     GetAvailableResourcesForDepartmentQuery query = new GetAvailableResourcesForDepartmentQuery(departmentCode);
 
     // Mock repository to return an empty list
-    when(resourceEntityRepository.findAvailableResourcesForDepartment(departmentCode)).thenReturn(Collections.emptyList());
+    when(departmentEntityRepository.findByCodeAndStatusNotDeleted(departmentCode)).thenReturn(new DepartmentEntity());
+    when(resourceEntityRepository.findAvailableResourcesForDepartment(departmentCode, IGRP_RESOURCE)).thenReturn(Collections.emptyList());
 
     // When the handler is called
     ResponseEntity<List<ResourceDTO>> response = handler.handle(query);

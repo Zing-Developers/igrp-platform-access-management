@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import cv.igrp.platform.access_management.shared.application.constants.Status;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -23,8 +25,8 @@ public class PermissionDTO  {
   
   private Integer id ;
   @NotBlank(message = "The field <name> is required")
-	@Size(max = 60, message = "The field length <name> cannot be more than 60 characters")
-	@Pattern(message = "Invalid value format for field <name>.", regexp = "^[A-Za-z0-9_-]+$")
+	@Size(max = 255, message = "The field length <name> cannot be more than 255 characters")
+	@Pattern(message = "Invalid value format for field <name>.", regexp = "^[A-Za-z0-9._-]+$")
   
   private String name ;
   @Size(max = 255, message = "The field length <description> cannot be more than 255 characters")
@@ -33,8 +35,8 @@ public class PermissionDTO  {
   
   
   private Status status ;
-  @NotBlank(message = "The field <departmentCode> is required")
   
-  private String departmentCode ;
+  
+  private List<String> departments = new ArrayList<>();
 
 }

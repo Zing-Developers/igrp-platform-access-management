@@ -9,13 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 
 
 /**
  * Utility class responsible for validating {@link RoleDTO} instances against business rules.
  *
- * <p>This validator checks for conditions such as duplicate role names within a department.
+ * <p>This validator checks for conditions such as duplicate role codes within a department.
  * Validation results are encapsulated in a {@link ResourceValidationResponse} object, which includes
  * status and detailed failure messages.
  */
@@ -24,7 +25,7 @@ public class RoleValidator {
     private static final Logger logger = LoggerFactory.getLogger(RoleValidator.class);
 
     /**
-     * Validates the given {@link RoleDTO} based on business rules, such as duplicate role name within
+     * Validates the given {@link RoleDTO} based on business rules, such as duplicate role code within
      * the same {@link DepartmentEntity}.
      *
      * @param roleDTO the role data to be validated
@@ -35,51 +36,76 @@ public class RoleValidator {
         ResourceValidationResponse response = new ResourceValidationResponse();
         response.setValid(true);
         response.setFailureMessage(new ArrayList<>());
-        validateRoleName(roleDTO, department, response);
+        validateRoleCode(roleDTO, department, response);
         return response;
     }
 
     /**
-     * Validates whether the role name provided in {@link RoleDTO} already exists in the given
+     * Validates whether the role code provided in {@link RoleDTO} already exists in the given
      * {@link DepartmentEntity}.
      *
      * @param roleDTO the role data to be validated
      * @param department the department in which the role is being created
      * @param response the validation response object to be updated with failure messages if any
      */
-    private static void validateRoleName(RoleDTO roleDTO, DepartmentEntity department, ResourceValidationResponse response) {
+    private static void validateRoleCode(RoleDTO roleDTO, DepartmentEntity department, ResourceValidationResponse response) {
         if(department != null && department.getRoles() != null){
-            Optional<RoleEntity> optionalRoleSameName = department.getRoles()
+            Optional<RoleEntity> optionalRoleSameCode = department.getRoles()
                     .stream()
-                    .filter(role -> !role.getStatus().equals(Status.DELETED) && role.getName().equalsIgnoreCase(roleDTO.getName()))
+                    .filter(role -> !Objects.equals(role.getStatus(), Status.DELETED) && role.getCode().equalsIgnoreCase(roleDTO.getCode()))
                     .findFirst();
-            if(optionalRoleSameName.isPresent()){
-                logger.warn("Role with name {} exists in Department {}.", roleDTO.getName(), department.getId());
+            if(optionalRoleSameCode.isPresent()){
+                logger.warn("Role with code {} exists in Department {}.", roleDTO.getCode(), department.getId());
                 response.setValid(false);
-                response.addFailureMessage("Role with name: " + roleDTO.getName() + " exists in Department: " + department.getId());
+                response.addFailureMessage("Role with code: " + roleDTO.getCode() + " exists in Department: " + department.getId());
             }
         }
     }
 
     /**
-     * Normalizes a role name to the format: departmentCode.name
-     * - If the given name already starts with departmentCode + ".", it is returned as-is.
-     * - Otherwise, the departmentCode is prepended to the name, separated by a dot.
+     * Normalizes a role code to the format: parentCode.code
+     * - If the given code already starts with parentCode + ".", it is returned as-is.
+     * - Otherwise, the parentCode is prepended to the code, separated by a dot.
      *
-     * @param name the original role name
-     * @param departmentCode the department code
-     * @return the normalized role name
+     * @param code the original role code
+     * @param parentCode the parent role code
+     * @return the normalized role code
      */
-    public static String normalizeRoleName(String name, String departmentCode) {
-        if (name == null || departmentCode == null) {
-            throw new IllegalArgumentException("Name and departmentCode must not be null");
+    public static String normalizeRoleCode(String code, String parentCode) {
+        if (code == null) {
+            throw new IllegalArgumentException("Code and departmentCode must not be null");
+        }
+
+        if(parentCode == null) {
+            return code;
+        }
+
+        String prefix = parentCode + ".";
+        if (code.startsWith(prefix)) {
+            return code;
+        }
+        return prefix + code;
+    }
+
+    /**
+     * Normalizes a role code to the format: departmentCode.code
+     * - If the given code already starts with departmentCode + ".", it is returned as-is.
+     * - Otherwise, the departmentCode is prepended to the code, separated by a dot.
+     *
+     * @param code the original role code
+     * @param departmentCode the department code
+     * @return the normalized role code
+     */
+    public static String normalizeRoleCodeForAdapter(String code, String departmentCode) {
+        if (code == null || departmentCode == null) {
+            throw new IllegalArgumentException("Code and departmentCode must not be null");
         }
 
         String prefix = departmentCode + ".";
-        if (name.startsWith(prefix)) {
-            return name;
+        if (code.startsWith(prefix)) {
+            return code;
         }
-        return prefix + name;
+        return prefix + code;
     }
     
 }

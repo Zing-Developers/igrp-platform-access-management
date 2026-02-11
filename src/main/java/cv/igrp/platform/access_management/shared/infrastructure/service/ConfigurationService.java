@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cv.igrp.framework.auth.core.adapter.IAdapter;
 import cv.igrp.framework.auth.core.exception.IAMException;
+import cv.igrp.platform.access_management.role.domain.service.RoleValidator;
 import cv.igrp.platform.access_management.shared.application.constants.MenuEntryType;
+import cv.igrp.platform.access_management.shared.domain.exceptions.IgrpResponseStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.Set;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class ConfigurationService {
@@ -24,15 +27,16 @@ public class ConfigurationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationService.class);
     private static final String SYSTEM_USER = "system";
 
-    @Value("${igrp.superadmin.username}")
-    private static final String SUPER_ADMIN_USERNAME = "superadmin";
+    @Value("${igrp.superadmin.user-external-id}")
+    public String SUPER_ADMIN_EXTERNAL_ID = "";
 
     @Value("${igrp.superadmin.email}")
-    private static final String SUPER_ADMIN_EMAIL = "%s@igrp.cv".formatted(SUPER_ADMIN_USERNAME);
+    private String SUPER_ADMIN_EMAIL = "superadmin@igrp.cv";
 
-    private static final String IGRP_DEPARTMENT = "DEPT_IGRP";
-    private static final String SUPER_ADMIN_ROLE = IGRP_DEPARTMENT + ".superadmin";
-    private static final String IGRP_PERMISSION = IGRP_DEPARTMENT + ".manage_access";
+    public static final String IGRP_DEPARTMENT = "DEPT_IGRP";
+    public static final String SUPER_ADMIN_ROLE = IGRP_DEPARTMENT + ".superadmin";
+    public static final String IGRP_PERMISSION = IGRP_DEPARTMENT + ".manage_access";
+    public static final String IGRP_RESOURCE = "igrp-access-management";
     private static final String IGRP_APP = "APP_IGRP_CENTER";
 
     private final JdbcTemplate jdbcTemplate;
@@ -51,17 +55,33 @@ public class ConfigurationService {
         long startTime = System.currentTimeMillis();
         LOGGER.info("[Startup Config] Starting system initialization...");
 
+        if(SUPER_ADMIN_EXTERNAL_ID.isBlank()) {
+            LOGGER.warn("[Startup Config] System admin external ID is not set. Skipping system initialization.");
+            throw new RuntimeException("No superadmin user external ID provided. Please set IGRP_SUPERADMIN_USER_EXTERNAL_ID in your environment variables.");
+        }
+
+        LOGGER.info("[Startup Config] Validating superadmin user...");
+
+        var superadmin = adapter.resolveUser(SUPER_ADMIN_EMAIL).orElseThrow(
+                () -> IgrpResponseStatusException.notFound("Superadmin User with email <" + SUPER_ADMIN_EMAIL + "> does not exist in the identity provider. Check if the email is correct or check connection with IAM provider.")
+        );
+
+        if(!Objects.equals(superadmin.getId(), SUPER_ADMIN_EXTERNAL_ID)) {
+            throw IgrpResponseStatusException.notFound("Superadmin User with ID <" + SUPER_ADMIN_EXTERNAL_ID + "> does not exist in the identity provider. Check if the ID is correct or check connection with IAM provider.");
+        }
+
         try {
             // 1. Bulk existence checks in database
-            boolean superAdminExists = exists("SELECT 1 FROM t_user WHERE username='%s' LIMIT 1".formatted(SUPER_ADMIN_USERNAME));
+            boolean superAdminExists = exists("SELECT 1 FROM t_user WHERE external_id='%s' LIMIT 1".formatted(SUPER_ADMIN_EXTERNAL_ID));
             boolean departmentExists = exists("SELECT 1 FROM t_department WHERE code='%s' LIMIT 1".formatted(IGRP_DEPARTMENT));
             boolean appExists = exists("SELECT 1 FROM t_application WHERE type='SYSTEM' LIMIT 1");
             boolean permissionExists = exists("SELECT 1 FROM t_permission WHERE name='%s' LIMIT 1".formatted(IGRP_PERMISSION));
-            boolean roleExists = exists("SELECT 1 FROM t_role WHERE name='%s' LIMIT 1".formatted(SUPER_ADMIN_ROLE));
+            boolean resourceExists = exists("SELECT 1 FROM t_resource WHERE name='%s' LIMIT 1".formatted(IGRP_RESOURCE));
+            boolean roleExists = exists("SELECT 1 FROM t_role WHERE code='%s' LIMIT 1".formatted(SUPER_ADMIN_ROLE));
 
             // 2. Check provider existence before attempting sync
             boolean departmentExistsInProvider = checkAndCreateDepartment(departmentExists);
-            boolean appExistsInProvider = checkAndCreateApplication(appExists, departmentExistsInProvider);
+            //boolean appExistsInProvider = checkAndCreateApplication(appExists, departmentExistsInProvider);
             //boolean permissionExistsInProvider = checkAndCreatePermission(permissionExists, appExists);
             boolean roleExistsInProvider = checkAndCreateRole(roleExists, departmentExistsInProvider, true);
 
@@ -70,15 +90,18 @@ public class ConfigurationService {
                     (departmentExistsInProvider ? createDefaultDepartmentInDB() : null);
 
             Long appId = appExists ? getId("SELECT id FROM t_application WHERE type='SYSTEM' LIMIT 1") :
-                    (appExistsInProvider ? createDefaultAppInDB(departmentId) : null);
+                    createDefaultAppInDB(departmentId);
 
             Long permissionId = permissionExists ? getId("SELECT id FROM t_permission WHERE name='%s'".formatted(IGRP_PERMISSION)) :
                     createDefaultPermissionInDB(departmentId);
 
-            Long roleId = roleExists ? getId("SELECT id FROM t_role WHERE name='%s'".formatted(SUPER_ADMIN_ROLE)) :
+            Long resourceId = resourceExists? getId("SELECT id FROM t_resource WHERE name='%s'".formatted(IGRP_RESOURCE)) :
+                    createDefaultResourceInDB(permissionId, appId, departmentId);
+
+            Long roleId = roleExists ? getId("SELECT id FROM t_role WHERE code='%s'".formatted(SUPER_ADMIN_ROLE)) :
                     (roleExistsInProvider ? createDefaultRoleInDB(departmentId, permissionId, appId) : null);
 
-            Long userId = superAdminExists ? getId("SELECT id FROM t_user WHERE username='%s'".formatted(SUPER_ADMIN_USERNAME)) :
+            Long userId = superAdminExists ? getId("SELECT id FROM t_user WHERE external_id='%s'".formatted(SUPER_ADMIN_EXTERNAL_ID)) :
                     createSuperAdminUserInDB();
 
             // 4. Assign role to superadmin user (only if all previous steps succeeded)
@@ -190,11 +213,11 @@ public class ConfigurationService {
         }
 
         try {
-            boolean existsInProvider = adapter.roleExists(IGRP_DEPARTMENT, SUPER_ADMIN_ROLE);
+            boolean existsInProvider = adapter.roleExists(IGRP_DEPARTMENT, RoleValidator.normalizeRoleCodeForAdapter(SUPER_ADMIN_ROLE, IGRP_DEPARTMENT));
 
             if (!roleExistsInDB && !existsInProvider) {
                 LOGGER.info("[Startup Config] Creating role in provider: {}", SUPER_ADMIN_ROLE);
-                adapter.createRole(IGRP_DEPARTMENT, SUPER_ADMIN_ROLE);
+                adapter.createRole(IGRP_DEPARTMENT, RoleValidator.normalizeRoleCodeForAdapter(SUPER_ADMIN_ROLE, IGRP_DEPARTMENT));
 
                 // Assign permission to a role if permission exists
                 //if (permissionExistsInProvider) {
@@ -249,7 +272,7 @@ public class ConfigurationService {
                 "iGRP App Center",
                 IGRP_APP,
                 "iGRP Application Center",
-                SUPER_ADMIN_USERNAME,
+                1,
                 SYSTEM_USER,
                 SYSTEM_USER
         );
@@ -273,30 +296,83 @@ public class ConfigurationService {
     Long createDefaultPermissionInDB(Long deptId) {
         String sql = """
                     INSERT INTO t_permission
-                    (name, description, status, department,
+                    (name, description, status,
                      created_by, created_date, last_modified_by, last_modified_date)
-                    VALUES (?, ?, 'ACTIVE', ?, ?, now(), ?, now())
+                    VALUES (?, ?, 'ACTIVE', ?, now(), ?, now())
                     RETURNING id
                 """;
         var query = jdbcTemplate.queryForObject(sql,
                 Long.class,
-                IGRP_PERMISSION, "iGRP Manage Access Permission", deptId,
+                IGRP_PERMISSION, "iGRP Manage Access Permission",
                 SYSTEM_USER, SYSTEM_USER);
         LOGGER.info("[Startup Config] Default Permission created in DB");
+
+        // Step 1: Insert department-permission relation
+        String insertRelationSql = """
+            INSERT INTO t_permission_department (permission_id, department)
+            VALUES (?, ?)
+        """;
+        jdbcTemplate.update(insertRelationSql, query, deptId);
+
         return query;
+    }
+
+    Long createDefaultResourceInDB(Long permId, Long appId, Long deptId) {
+        String sqlRole = """
+                    INSERT INTO t_resource
+                    (name, description, type, status,
+                     created_by, created_date, last_modified_by, last_modified_date)
+                    VALUES (?, ?, 'API', 'ACTIVE', ?, now(), ?, now())
+                    RETURNING id
+                """;
+        Long resourceId = jdbcTemplate.queryForObject(sqlRole,
+                Long.class,
+                IGRP_RESOURCE, "iGRP Access Management API",
+                SYSTEM_USER, SYSTEM_USER);
+
+        // Step 1: Insert resource-permission relation
+        String sqlRolePerm = """
+                    INSERT INTO t_resource_permission
+                    (resource_id, permission)
+                    SELECT ?, ?
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM t_resource_permission WHERE resource_id=? AND permission=?
+                    )
+                """;
+        jdbcTemplate.update(sqlRolePerm, resourceId, permId, resourceId, permId);
+
+        // Step 2: Associate with application
+        String insertRelationSql = """
+            INSERT INTO t_application_resource (resource_id, application_id)
+            VALUES (?, ?)
+        """;
+
+        jdbcTemplate.update(insertRelationSql, resourceId, appId);
+
+        // Step 3. Associate with department
+        String insertDeptRelationSql = """
+            INSERT INTO t_resource_department (resource_id, department)
+            VALUES (?, ?)
+        """;
+
+        jdbcTemplate.update(insertDeptRelationSql, resourceId, deptId);
+
+        LOGGER.info("[Startup Config] Default Resource created in DB");
+
+        return resourceId;
     }
 
     Long createDefaultRoleInDB(Long deptId, Long permId, Long appId) {
         String sqlRole = """
                     INSERT INTO t_role
-                    (name, description, status, department,
+                    (code, name, description, status, department,
                      created_by, created_date, last_modified_by, last_modified_date)
-                    VALUES (?, ?, 'ACTIVE', ?, ?, now(), ?, now())
+                    VALUES (?, ?, ?, 'ACTIVE', ?, ?, now(), ?, now())
                     RETURNING id
                 """;
         Long roleId = jdbcTemplate.queryForObject(sqlRole,
                 Long.class,
-                SUPER_ADMIN_ROLE, "iGRP Superadmin", deptId,
+                SUPER_ADMIN_ROLE, "iGRP Superadmin", "iGRP Superadmin", deptId,
                 SYSTEM_USER, SYSTEM_USER);
 
         // Step 1: Insert role-permission relation
@@ -325,7 +401,7 @@ public class ConfigurationService {
     private Long createSuperAdminUserInDB() {
         String sql = """
                     INSERT INTO t_user
-                    (name, username, email, status,
+                    (name, external_id, email, status,
                      created_by, created_date, last_modified_by, last_modified_date)
                     VALUES (?, ?, ?, ?, ?, now(), ?, now())
                     RETURNING id
@@ -333,14 +409,14 @@ public class ConfigurationService {
         LOGGER.info("[Startup Config] Super admin user created in DB");
         return jdbcTemplate.queryForObject(sql,
                 Long.class,
-                "iGRP Super Admin", SUPER_ADMIN_USERNAME, SUPER_ADMIN_EMAIL, "ACTIVE",
+                "iGRP Super Admin", SUPER_ADMIN_EXTERNAL_ID, SUPER_ADMIN_EMAIL, "ACTIVE",
                 SYSTEM_USER, SYSTEM_USER);
     }
 
     void assignRoleToSuperAdminUserInDB(Long roleId, Long userId) {
         try {
             // Assign role in provider
-            adapter.assignRoleToUser(IGRP_DEPARTMENT, SUPER_ADMIN_ROLE, SUPER_ADMIN_USERNAME);
+            adapter.assignRoleToUser(IGRP_DEPARTMENT, RoleValidator.normalizeRoleCodeForAdapter(SUPER_ADMIN_ROLE, IGRP_DEPARTMENT), SUPER_ADMIN_EXTERNAL_ID);
 
             // Assign role in database
             String sql = """
@@ -385,7 +461,15 @@ public class ConfigurationService {
             }
 
             // Delete old menus for the app
-            jdbcTemplate.update("DELETE FROM t_menu_entry WHERE application_id = ?", appId);
+            UUID randomUuid = UUID.randomUUID();
+
+            jdbcTemplate.update(
+                    "UPDATE t_menu_entry " +
+                            "SET code = CONCAT(code, '-', ?), status = 'DELETED' " +
+                            "WHERE application_id = ?",
+                    randomUuid.toString(),
+                    appId
+            );
 
             // Insert new menus recursively
             insertMenuHierarchy(root, null, (short) 0, appId, roleId);

@@ -9,7 +9,8 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -23,23 +24,21 @@ public class ResourceItemDTO  {
   
   private Integer id ;
   @NotBlank(message = "The field <name> is required")
-	@Size(min = 3, message = "The field length <name> must be at least 3 characters")
-	@Size(max = 100, message = "The field length <name> cannot be more than 100 characters")
+	@Size(max = 255, message = "The field length <name> cannot be more than 255 characters")
   
   private String name ;
   
   
   private String description ;
-  @Size(min = 5, message = "The field length <url> must be at least 5 characters")
-	@Size(max = 255, message = "The field length <url> cannot be more than 255 characters")
+  @Size(max = 255, message = "The field length <url> cannot be more than 255 characters")
   
   private String url ;
-  
-  
-  private String permissionName ;
   @NotBlank(message = "The field <resourceName> is required")
   
   private String resourceName ;
+  
+  
+  private List<String> permissions = new ArrayList<>();
   
   
   private String createdBy ;

@@ -1,21 +1,16 @@
 /* THIS FILE WAS GENERATED AUTOMATICALLY BY iGRP STUDIO. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
+/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME */
 
 package cv.igrp.platform.access_management.shared.infrastructure.persistence.entity;
 
-import cv.igrp.framework.stereotype.IgrpEntity;
-import cv.igrp.platform.access_management.shared.application.constants.Status;
 import cv.igrp.platform.access_management.shared.config.AuditEntity;
+import cv.igrp.framework.stereotype.IgrpEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.envers.Audited;
-
-import java.util.HashSet;
+import cv.igrp.platform.access_management.shared.application.constants.Status;
 import java.util.Set;
+import java.util.HashSet;
 
 @Audited
 @Getter
@@ -32,24 +27,31 @@ public class PermissionEntity extends AuditEntity {
     @Column(name = "id", unique = true, nullable = false)
     private Integer id;
 
-    @Column(name = "name")
+  
+    @Column(name="name")
     private String name;
 
-    @NotBlank(message = "description is mandatory")
-    @Column(name = "description", nullable = false)
+  
+    @Column(name="description")
     private String description;
 
+  
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name="status")
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department", referencedColumnName = "id")
-    private DepartmentEntity department;
+  
 
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
-    private Set<RoleEntity> roles = new HashSet<>();
 
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
-    private Set<ResourceEntity> resources = new HashSet<>();
+  
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "t_permission_department",
+            joinColumns = @JoinColumn(name = "permission_id"),
+            inverseJoinColumns = @JoinColumn(name = "department")
+    )
+private Set<DepartmentEntity> departments = new HashSet<>();   @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+private Set<ResourceEntity> resources = new HashSet<>();
+
+
 }

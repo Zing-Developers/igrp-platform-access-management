@@ -1,5 +1,5 @@
 /* THIS FILE WAS GENERATED AUTOMATICALLY BY iGRP STUDIO. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
+/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME */
 
 package cv.igrp.platform.access_management.department.interfaces.rest;
 
@@ -14,50 +14,50 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import cv.igrp.framework.core.domain.CommandBus;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import cv.igrp.framework.core.domain.QueryBus;
-import cv.igrp.platform.access_management.department.application.commands.*;
 import cv.igrp.platform.access_management.department.application.queries.*;
-
-
+import cv.igrp.framework.core.domain.CommandBus;
+import cv.igrp.platform.access_management.department.application.commands.*;
 import cv.igrp.platform.access_management.shared.application.dto.DepartmentDTO;
 import java.util.List;
 import cv.igrp.platform.access_management.shared.application.dto.ApplicationDTO;
 import cv.igrp.platform.access_management.shared.application.dto.MenuEntryDTO;
 import cv.igrp.platform.access_management.shared.application.dto.ResourceDTO;
+import cv.igrp.platform.access_management.shared.application.dto.RoleDTO;
+import cv.igrp.platform.access_management.shared.application.dto.PermissionDTO;
+import cv.igrp.platform.access_management.shared.application.dto.RoleChildHierarchyDTO;
+import cv.igrp.platform.access_management.shared.application.dto.RoleParentHierarchyDTO;
 
 @IgrpController
 @RestController
 @RequestMapping(path = "api")
-@Tag(name = "Department", description = "Department Management")
+@Tag(
+    name = "Department",
+    description = "Department Management"
+)
 public class DepartmentController {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DepartmentController.class);
-
   
-  private final CommandBus commandBus;
   private final QueryBus queryBus;
+  private final CommandBus commandBus;
 
-  
-  public DepartmentController(
-    CommandBus commandBus, QueryBus queryBus
-  ) {
-    this.commandBus = commandBus;
-    this.queryBus = queryBus;
+  public DepartmentController(QueryBus queryBus, CommandBus commandBus) {
+          this.queryBus = queryBus;
+          this.commandBus = commandBus;
   }
-
-  @PostMapping(
-    value = "departments"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_CREATE)")
+   @PostMapping(
+   value = "departments"
   )
   @Operation(
-    summary = "POST method to handle operations for postDepartment",
-    description = "POST method to handle operations for postDepartment",
+    summary = "Post department",
+    description = "This Permission is required: igrp.department.create",
     responses = {
       @ApiResponse(
           responseCode = "201",
-          description = "",
+          
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -72,25 +72,19 @@ public class DepartmentController {
     )
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new PostDepartmentCommand(postDepartmentRequest);
 
-       ResponseEntity<DepartmentDTO> response = commandBus.send(command);
+      return commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_LIST)")
+   @GetMapping(
+   value = "departments"
   )
   @Operation(
-    summary = "GET method to handle operations for getDepartments",
-    description = "GET method to handle operations for getDepartments",
+    summary = "Get departments",
+    description = "This Permission is required: igrp.department.list",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -112,25 +106,19 @@ public class DepartmentController {
     @RequestParam(value = "parentCode", required = false) String parentCode)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetDepartmentsQuery(name, status, code, parentCode);
 
-      ResponseEntity<List<DepartmentDTO>> response = queryBus.handle(query);
+      return queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments/{id}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{id}"
   )
   @Operation(
-    summary = "GET method to handle operations for getDepartmentById",
-    description = "GET method to handle operations for getDepartmentById",
+    summary = "Get department by id",
+    description = "This Permission is required: igrp.department.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -149,25 +137,19 @@ public class DepartmentController {
     @PathVariable(value = "id") Integer id)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetDepartmentByIdQuery(id);
 
-      ResponseEntity<DepartmentDTO> response = queryBus.handle(query);
+      return queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @PutMapping(
-    value = "departments/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_UPDATE)")
+   @PutMapping(
+   value = "departments/{code}"
   )
   @Operation(
-    summary = "PUT method to handle operations for updateDepartment",
-    description = "PUT method to handle operations for updateDepartment",
+    summary = "Update department",
+    description = "This Permission is required: igrp.department.update",
     responses = {
       @ApiResponse(
           responseCode = "200",
@@ -186,29 +168,23 @@ public class DepartmentController {
     , @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new UpdateDepartmentCommand(updateDepartmentRequest, code);
 
-       ResponseEntity<DepartmentDTO> response = commandBus.send(command);
+      return commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @DeleteMapping(
-    value = "departments/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_DELETE)")
+   @DeleteMapping(
+   value = "departments/{code}"
   )
   @Operation(
-    summary = "DELETE method to handle operations for deleteDepartment",
-    description = "DELETE method to handle operations for deleteDepartment",
+    summary = "Delete department",
+    description = "This Permission is required: igrp.department.delete",
     responses = {
       @ApiResponse(
           responseCode = "204",
-          description = "",
+          
           content = @Content(
               mediaType = "",
               schema = @Schema(
@@ -223,29 +199,23 @@ public class DepartmentController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var command = new DeleteDepartmentCommand(code);
 
-       ResponseEntity<?> response = commandBus.send(command);
+      return commandBus.send(command);
 
-       LOGGER.debug("Operation finished");
-
-        return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments/by-code/{code}"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/by-code/{code}"
   )
   @Operation(
-    summary = "GET method to handle operations for getDepartmentByCode",
-    description = "GET method to handle operations for getDepartmentByCode",
+    summary = "Get department by code",
+    description = "This Permission is required: igrp.department.view",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "",
+          
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -260,29 +230,23 @@ public class DepartmentController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetDepartmentByCodeQuery(code);
 
-      ResponseEntity<DepartmentDTO> response = queryBus.handle(query);
+      return queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments/{code}/applications/available"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @GetMapping(
+   value = "departments/{code}/applications/available"
   )
   @Operation(
-    summary = "GET method to handle operations for getAvailableApplicationsForDepartment",
-    description = "GET method to handle operations for getAvailableApplicationsForDepartment",
+    summary = "Get available applications for department",
+    description = "This Permission is required: igrp.department.manage",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "",
+          
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -297,29 +261,23 @@ public class DepartmentController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetAvailableApplicationsForDepartmentQuery(code);
 
-      ResponseEntity<List<ApplicationDTO>> response = queryBus.handle(query);
+      return queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments/{code}/menus/available"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @GetMapping(
+   value = "departments/{departmentCode}/applications/{applicationCode}/menus/available"
   )
   @Operation(
-    summary = "GET method to handle operations for getMenusAvailableForDepartment",
-    description = "GET method to handle operations for getMenusAvailableForDepartment",
+    summary = "Get menus available for department",
+    description = "This Permission is required: igrp.department.manage",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "",
+          
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -331,32 +289,26 @@ public class DepartmentController {
   )
   
   public ResponseEntity<List<MenuEntryDTO>> getMenusAvailableForDepartment(
-    @PathVariable(value = "code") String code)
+    @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "applicationCode") String applicationCode)
   {
 
-      LOGGER.debug("Operation started");
+      final var query = new GetMenusAvailableForDepartmentQuery(departmentCode, applicationCode);
 
-      final var query = new GetMenusAvailableForDepartmentQuery(code);
+      return queryBus.handle(query);
 
-      ResponseEntity<List<MenuEntryDTO>> response = queryBus.handle(query);
-
-      LOGGER.debug("Operation finished");
-
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
   }
 
-  @GetMapping(
-    value = "departments/{code}/resources/available"
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @GetMapping(
+   value = "departments/{code}/resources/available"
   )
   @Operation(
-    summary = "GET method to handle operations for getAvailableResourcesForDepartment",
-    description = "GET method to handle operations for getAvailableResourcesForDepartment",
+    summary = "Get available resources for department",
+    description = "This Permission is required: igrp.department.manage",
     responses = {
       @ApiResponse(
           responseCode = "200",
-          description = "",
+          
           content = @Content(
               mediaType = "application/json",
               schema = @Schema(
@@ -371,17 +323,723 @@ public class DepartmentController {
     @PathVariable(value = "code") String code)
   {
 
-      LOGGER.debug("Operation started");
-
       final var query = new GetAvailableResourcesForDepartmentQuery(code);
 
-      ResponseEntity<List<ResourceDTO>> response = queryBus.handle(query);
+      return queryBus.handle(query);
 
-      LOGGER.debug("Operation finished");
+  }
 
-      return ResponseEntity.status(response.getStatusCode())
-              .headers(response.getHeaders())
-              .body(response.getBody());
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{code}/roles"
+  )
+  @Operation(
+    summary = "Create role",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "201",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleDTO> createRole(@Valid @RequestBody RoleDTO createRoleRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new CreateRoleCommand(createRoleRequest, code);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{code}/roles"
+  )
+  @Operation(
+    summary = "Get roles",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<RoleDTO>> getRoles(
+    @RequestParam(value = "roleCode", required = false) String roleCode, @PathVariable(value = "code") String code)
+  {
+
+      final var query = new GetRolesQuery(roleCode, code);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PutMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}"
+  )
+  @Operation(
+    summary = "Update role",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleDTO> updateRole(@Valid @RequestBody RoleDTO updateRoleRequest
+    , @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var command = new UpdateRoleCommand(updateRoleRequest, departmentCode, roleCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}"
+  )
+  @Operation(
+    summary = "Delete role",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = boolean.class,
+                  type = "boolean")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<Boolean> deleteRole(
+    @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var command = new DeleteRoleCommand(departmentCode, roleCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/permissions"
+  )
+  @Operation(
+    summary = "Remove permissions",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleDTO> removePermissions(@RequestBody List<String> removePermissionsRequest
+    , @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var command = new RemovePermissionsCommand(removePermissionsRequest, departmentCode, roleCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/permissions"
+  )
+  @Operation(
+    summary = "Get permissions by role id",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = PermissionDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<PermissionDTO>> getPermissionsByRoleId(
+    @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var query = new GetPermissionsByRoleIdQuery(departmentCode, roleCode);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/permissions"
+  )
+  @Operation(
+    summary = "Add permissions",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleDTO> addPermissions(@RequestBody List<String> addPermissionsRequest
+    , @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var command = new AddPermissionsCommand(addPermissionsRequest, departmentCode, roleCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @GetMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/permissions/available"
+  )
+  @Operation(
+    summary = "Get available permissions for roles",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = PermissionDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<PermissionDTO>> getAvailablePermissionsForRoles(
+    @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var query = new GetAvailablePermissionsForRolesQuery(departmentCode, roleCode);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{code}/applications"
+  )
+  @Operation(
+    summary = "Add applications to department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> addApplicationsToDepartment(@RequestBody List<String> addApplicationsToDepartmentRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new AddApplicationsToDepartmentCommand(addApplicationsToDepartmentRequest, code);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{departmentCode}/applications/{applicationCode}/menus"
+  )
+  @Operation(
+    summary = "Add menus to department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> addMenusToDepartment(@RequestBody List<String> addMenusToDepartmentRequest
+    , @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "applicationCode") String applicationCode)
+  {
+
+      final var command = new AddMenusToDepartmentCommand(addMenusToDepartmentRequest, departmentCode, applicationCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{code}/applications"
+  )
+  @Operation(
+    summary = "Remove applications from department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> removeApplicationsFromDepartment(@RequestBody List<String> removeApplicationsFromDepartmentRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new RemoveApplicationsFromDepartmentCommand(removeApplicationsFromDepartmentRequest, code);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{departmentCode}/applications/{applicationCode}/menus"
+  )
+  @Operation(
+    summary = "Remove menus from department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> removeMenusFromDepartment(@RequestBody List<String> removeMenusFromDepartmentRequest
+    , @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "applicationCode") String applicationCode)
+  {
+
+      final var command = new RemoveMenusFromDepartmentCommand(removeMenusFromDepartmentRequest, departmentCode, applicationCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "/departments/{code}/resources"
+  )
+  @Operation(
+    summary = "Get department resources",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = ResourceDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<ResourceDTO>> getDepartmentResources(
+    @RequestParam(value = "resourceName", required = false) String resourceName, @PathVariable(value = "code") String code)
+  {
+
+      final var query = new GetDepartmentResourcesQuery(resourceName, code);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "/departments/{departmentCode}/applications/{applicationCode}/menus"
+  )
+  @Operation(
+    summary = "Get department menus",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = MenuEntryDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<MenuEntryDTO>> getDepartmentMenus(
+    @RequestParam(value = "menuCode", required = false) String menuCode, @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "applicationCode") String applicationCode)
+  {
+
+      final var query = new GetDepartmentMenusQuery(menuCode, departmentCode, applicationCode);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "/departments/{code}/applications"
+  )
+  @Operation(
+    summary = "Get department applications",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = ApplicationDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<ApplicationDTO>> getDepartmentApplications(
+    @RequestParam(value = "applicationCode", required = false) String applicationCode, @PathVariable(value = "code") String code)
+  {
+
+      final var query = new GetDepartmentApplicationsQuery(applicationCode, code);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{departmentCode}/resources"
+  )
+  @Operation(
+    summary = "Add resources to department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> addResourcesToDepartment(@RequestBody List<String> addResourcesToDepartmentRequest
+    , @PathVariable(value = "departmentCode") String departmentCode)
+  {
+
+      final var command = new AddResourcesToDepartmentCommand(addResourcesToDepartmentRequest, departmentCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{departmentCode}/resources"
+  )
+  @Operation(
+    summary = "Remove resources from department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> removeResourcesFromDepartment(@RequestBody List<String> removeResourcesFromDepartmentRequest
+    , @PathVariable(value = "departmentCode") String departmentCode)
+  {
+
+      final var command = new RemoveResourcesFromDepartmentCommand(removeResourcesFromDepartmentRequest, departmentCode);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{code}/permissions"
+  )
+  @Operation(
+    summary = "Get department permissions",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = PermissionDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<PermissionDTO>> getDepartmentPermissions(
+    @RequestParam(value = "permissionName", required = false) String permissionName, @PathVariable(value = "code") String code)
+  {
+
+      final var query = new GetDepartmentPermissionsQuery(permissionName, code);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @PostMapping(
+   value = "departments/{code}/permissions"
+  )
+  @Operation(
+    summary = "Add permissions to department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> addPermissionsToDepartment(@RequestBody List<String> addPermissionsToDepartmentRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new AddPermissionsToDepartmentCommand(addPermissionsToDepartmentRequest, code);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @DeleteMapping(
+   value = "departments/{code}/permissions"
+  )
+  @Operation(
+    summary = "Remove permissions from department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "204",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = String.class,
+                  type = "String")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<String> removePermissionsFromDepartment(@RequestBody List<String> removePermissionsFromDepartmentRequest
+    , @PathVariable(value = "code") String code)
+  {
+
+      final var command = new RemovePermissionsFromDepartmentCommand(removePermissionsFromDepartmentRequest, code);
+
+      return commandBus.send(command);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_MANAGE)")
+   @GetMapping(
+   value = "departments/{departmentCode}/permissions/available"
+  )
+  @Operation(
+    summary = "Get available permissions for department",
+    description = "This Permission is required: igrp.department.manage",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = PermissionDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<List<PermissionDTO>> getAvailablePermissionsForDepartment(
+    @RequestParam(value = "resourceName", required = false) String resourceName, @PathVariable(value = "departmentCode") String departmentCode)
+  {
+
+      final var query = new GetAvailablePermissionsForDepartmentQuery(resourceName, departmentCode);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/children"
+  )
+  @Operation(
+    summary = "Get role children",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleChildHierarchyDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleChildHierarchyDTO> getRoleChildren(
+    @RequestParam(value = "level", required = false) Integer level, @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var query = new GetRoleChildrenQuery(level, departmentCode, roleCode);
+
+      return queryBus.handle(query);
+
+  }
+
+   @PreAuthorize("@igrpAuthorization.checkPermission(T(Permission).IGRP_DEPARTMENT_VIEW)")
+   @GetMapping(
+   value = "departments/{departmentCode}/roles/{roleCode}/parents"
+  )
+  @Operation(
+    summary = "Get role parents",
+    description = "This Permission is required: igrp.department.view",
+    responses = {
+      @ApiResponse(
+          responseCode = "200",
+          
+          content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(
+                  implementation = RoleParentHierarchyDTO.class,
+                  type = "object")
+          )
+      )
+    }
+  )
+  
+  public ResponseEntity<RoleParentHierarchyDTO> getRoleParents(
+    @RequestParam(value = "level", required = false) Integer level, @PathVariable(value = "departmentCode") String departmentCode,@PathVariable(value = "roleCode") String roleCode)
+  {
+
+      final var query = new GetRoleParentsQuery(level, departmentCode, roleCode);
+
+      return queryBus.handle(query);
+
   }
 
 }

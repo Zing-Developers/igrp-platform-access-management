@@ -43,7 +43,7 @@ class DepartmentMapperTest {
         assertEquals("Human Resources", dto.getName());
         assertEquals("Handles HR", dto.getDescription());
         assertEquals(DepartmentStatus.ACTIVE, dto.getStatus());
-        assertEquals("NOSI", dto.getParent_code());
+        assertEquals("NOSI", dto.getParentCode());
     }
 
     @Test
@@ -96,7 +96,6 @@ class DepartmentMapperTest {
     @DisplayName("updateEntityFromDto(): should update existing entity")
     void updateEntityFromDto_shouldUpdateFields() {
         DepartmentDTO dto = new DepartmentDTO();
-        dto.setCode("NEW");
         dto.setName("New Dept");
         dto.setDescription("Updated desc");
         dto.setStatus(DepartmentStatus.INACTIVE);
@@ -109,7 +108,7 @@ class DepartmentMapperTest {
 
         mapper.updateEntityFromDto(dto, entity);
 
-        assertEquals("NEW", entity.getCode());
+        assertEquals("OLD", entity.getCode()); // Code cannot be changed
         assertEquals("New Dept", entity.getName());
         assertEquals("Updated desc", entity.getDescription());
         assertEquals(DepartmentStatus.INACTIVE, entity.getStatus());

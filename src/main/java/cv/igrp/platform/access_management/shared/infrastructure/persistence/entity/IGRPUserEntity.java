@@ -28,11 +28,10 @@ public class IGRPUserEntity extends AuditEntity implements UserIdentity {
     @Column(name = "id", unique = true, nullable = false)
     private Integer id;
 
-    @NotBlank(message = "name is mandatory")
-    @Column(name="name", nullable = false)
+    @Column(name="name")
     private String name;
 
-    @Column(name="username", unique = true)
+    @Column(name="username")
     private String username;
 
     @Column(name="email", unique = true)
@@ -54,6 +53,9 @@ public class IGRPUserEntity extends AuditEntity implements UserIdentity {
     @Enumerated(EnumType.STRING)
     @Column(name="status", nullable = false)
     private Status status = Status.ACTIVE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private RoleEntity activeRole;
 
     @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<RoleEntity> roles = new ArrayList<>();

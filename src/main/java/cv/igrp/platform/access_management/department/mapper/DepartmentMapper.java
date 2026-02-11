@@ -18,8 +18,9 @@ public class DepartmentMapper {
         dto.setDescription(entity.getDescription());
         dto.setStatus(entity.getStatus());
         if (entity.getParentId() != null) {
-            dto.setParent_code(entity.getParentId().getCode());
+            dto.setParentCode(entity.getParentId().getCode());
         }
+        dto.setIcon(entity.getIcon());
         return dto;
     }
 
@@ -32,15 +33,16 @@ public class DepartmentMapper {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setStatus(dto.getStatus() != null ? dto.getStatus() : DepartmentStatus.ACTIVE);
+        entity.setIcon(dto.getIcon());
         return entity;
     }
 
     public void updateEntityFromDto(DepartmentDTO dto, DepartmentEntity entity) {
         if (dto == null || entity == null) return;
 
-        entity.setCode(dto.getCode());
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setStatus(dto.getStatus() != null ? dto.getStatus() : DepartmentStatus.ACTIVE);
+        entity.setIcon(dto.getIcon());
     }
 }

@@ -1,6 +1,8 @@
 package cv.igrp.platform.access_management.department.application.queries;
 
-import cv.igrp.platform.access_management.resource.mapper.ResourceMapper;
+import cv.igrp.platform.access_management.department.mapper.ResourceMapper;
+import cv.igrp.platform.access_management.shared.domain.exceptions.IgrpResponseStatusException;
+import cv.igrp.platform.access_management.shared.infrastructure.persistence.repository.DepartmentEntityRepository;
 import cv.igrp.platform.access_management.shared.infrastructure.persistence.repository.ResourceEntityRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,8 @@ import java.util.List;
 
 import cv.igrp.platform.access_management.shared.application.dto.ResourceDTO;
 
+import static cv.igrp.platform.access_management.shared.infrastructure.service.ConfigurationService.IGRP_RESOURCE;
+
 @Component
 public class GetAvailableResourcesForDepartmentQueryHandler implements QueryHandler<GetAvailableResourcesForDepartmentQuery, ResponseEntity<List<ResourceDTO>>> {
 
@@ -21,8 +25,10 @@ public class GetAvailableResourcesForDepartmentQueryHandler implements QueryHand
 
     private final ResourceMapper resourceMapper;
     private final ResourceEntityRepository resourceEntityRepository;
+    private final DepartmentEntityRepository departmentEntityRepository;
 
-    public GetAvailableResourcesForDepartmentQueryHandler(ResourceMapper resourceMapper, ResourceEntityRepository resourceEntityRepository) {
+    public GetAvailableResourcesForDepartmentQueryHandler(ResourceMapper resourceMapper, ResourceEntityRepository resourceEntityRepository, DepartmentEntityRepository departmentEntityRepository) {
+        this.departmentEntityRepository = departmentEntityRepository;
         this.resourceMapper = resourceMapper;
         this.resourceEntityRepository = resourceEntityRepository;
     }
@@ -31,7 +37,10 @@ public class GetAvailableResourcesForDepartmentQueryHandler implements QueryHand
     public ResponseEntity<List<ResourceDTO>> handle(GetAvailableResourcesForDepartmentQuery query) {
         LOGGER.info("Getting Available Resources for department: {}", query.getCode());
 
-        List<ResourceDTO> availableResources = resourceEntityRepository.findAvailableResourcesForDepartment(query.getCode())
+        // Verify if the department exists
+        departmentEntityRepository.findByCodeAndStatusNotDeleted(query.getCode());
+
+        List<ResourceDTO> availableResources = resourceEntityRepository.findAvailableResourcesForDepartment(query.getCode(), IGRP_RESOURCE)
                 .stream()
                 .map(resourceMapper::toDto)
                 .toList();
